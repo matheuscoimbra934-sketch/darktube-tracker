@@ -53,8 +53,24 @@ serve(async (req) => {
         .maybeSingle();
 
     if (!cfg) return json({ error: 'workspace not configured' }, 403);
-    if (cfg.hottok && payload.hottok !== cfg.hottok) {
-        return json({ error: 'invalid hottok' }, 401);
+
+    // Hotmart pode mandar o Hottok no body (v1.0 / postback de teste) OU no header (v2.0 venda real)
+    if (cfg.hottok) {
+        const headerHottok =
+            req.headers.get('x-hotmart-hottok')
+            ?? req.headers.get('x-hottok')
+            ?? req.headers.get('hottok')
+            ?? null;
+        const bodyHottok = payload?.hottok ?? null;
+        const receivedHottok = headerHottok ?? bodyHottok;
+        if (receivedHottok !== cfg.hottok) {
+            return json({
+                error: 'invalid hottok',
+                hint: 'expected via header X-Hotmart-Hottok or body field hottok',
+                got_header: headerHottok ? 'present' : 'missing',
+                got_body: bodyHottok ? 'present' : 'missing',
+            }, 401);
+        }
     }
 
     // parse Hotmart v1.0 ou v2.0
