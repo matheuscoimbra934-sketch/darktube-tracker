@@ -1265,7 +1265,7 @@ function renderVendas() {
     // Tabela
     const tbody = document.querySelector('#vendas-table tbody');
     if (!vendas.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Nenhuma venda no filtro/período selecionado.</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Nenhuma venda no filtro/período selecionado.</td></tr>`;
         return;
     }
     tbody.innerHTML = vendas.map(e => {
@@ -1277,14 +1277,21 @@ function renderVendas() {
         const linkHotmart = canal?.hotmart_url ? (() => {
             try { const u = new URL(canal.hotmart_url); u.searchParams.set('src', e.src || ''); return u.toString(); } catch { return canal.hotmart_url; }
         })() : null;
+        const semCanal = !canal;
+        // ucode do produto vem da raw_payload (Hotmart 2.0)
+        const ucode = e.raw_payload?.data?.product?.ucode || e.raw_payload?.data?.product?.id || null;
+        const produtoNome = e.produto_nome || e.raw_payload?.data?.product?.name || null;
         return `
-            <tr>
+            <tr ${semCanal ? 'style="background:rgba(255,204,77,0.04)"' : ''}>
                 <td class="mono" style="font-size:11px">${when}</td>
                 <td>${escapeHtml(pessoa?.nome || '—')}</td>
                 <td>${escapeHtml(rede?.nome || '—')}</td>
                 <td>
-                    ${escapeHtml(canal?.nome || '—')}
-                    ${canal?.pais ? `<div style="font-size:10px;color:var(--text-3)">${escapeHtml(canal.pais)}</div>` : ''}
+                    ${semCanal
+                        ? `<div style="color:var(--yellow);font-size:11px"><strong>Sem canal</strong></div>
+                           ${produtoNome ? `<div style="font-size:10px;color:var(--text-3)" title="${escapeHtml(produtoNome)}">${escapeHtml(produtoNome.substring(0, 30))}${produtoNome.length > 30 ? '…' : ''}</div>` : ''}
+                           ${ucode ? `<div style="font-size:10px;color:var(--text-3);font-family:'JetBrains Mono'">ucode: ${escapeHtml(String(ucode))}</div>` : ''}`
+                        : escapeHtml(canal.nome) + (canal.pais ? `<div style="font-size:10px;color:var(--text-3)">${escapeHtml(canal.pais)}</div>` : '')}
                 </td>
                 <td>
                     <div class="mono" style="font-size:11px">src=${escapeHtml(e.src || '—')}</div>
@@ -1293,8 +1300,119 @@ function renderVendas() {
                 <td>${escapeHtml(e.comprador_nome || '—')}<div style="font-size:10px;color:var(--text-3)">${escapeHtml(e.comprador_email || '')}</div></td>
                 <td class="mono" style="font-size:11px">${escapeHtml(e.pais || '—')}</td>
                 <td class="right mono amount-pos">${fmtMoeda(e.valor, e.moeda)}</td>
+                <td class="right">
+                    ${semCanal && canWrite()
+                        ? `<button class="btn-primary" style="font-size:11px;padding:6px 10px" onclick="openVincularModal('${e.id}')" title="Vincular essa venda a um canal e arrumar o cadastro">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                              Vincular
+                          </button>`
+                        : ''}
+                </td>
             </tr>`;
     }).join('');
+}
+
+/* ========== VINCULAR VENDA A CANAL ========== */
+async function openVincularModal(eventoId) {
+    if (!canWrite()) { toast('Sem permissão', 'error'); return; }
+    const evento = state.eventos.find(e => e.id === eventoId);
+    if (!evento) return;
+
+    const ucode = evento.raw_payload?.data?.product?.ucode || String(evento.raw_payload?.data?.product?.id || '');
+    const produtoNome = evento.produto_nome || evento.raw_payload?.data?.product?.name || '';
+    const moeda = (evento.moeda || 'BRL').toUpperCase();
+
+    editingType = 'vincular';
+    editingItem = { ...evento, _ucode: ucode };
+    document.getElementById('modal-eyebrow').textContent = 'VINCULAR VENDA';
+    document.getElementById('modal-title').textContent = 'Atribuir essa venda a um canal';
+    const form = document.getElementById('modal-form');
+    form.innerHTML = `
+        <div class="form-grid">
+            <div class="form-field full" style="background:rgba(255,204,77,0.08);padding:12px 14px;border-radius:10px;border:1px solid rgba(255,204,77,0.25)">
+                <p style="font-size:12px;color:var(--text-1);margin:0 0 6px;line-height:1.5">
+                    <strong>Venda sem canal atribuído:</strong> ${fmtMoeda(evento.valor, moeda)} — ${escapeHtml(evento.comprador_nome || evento.comprador_email || 'sem nome')}
+                </p>
+                ${produtoNome ? `<p style="font-size:11px;color:var(--text-2);margin:0 0 4px"><strong>Produto Hotmart:</strong> ${escapeHtml(produtoNome)}</p>` : ''}
+                ${ucode ? `<p style="font-size:11px;color:var(--text-2);margin:0;font-family:'JetBrains Mono'"><strong>ucode:</strong> ${escapeHtml(ucode)}</p>` : ''}
+            </div>
+            <div class="form-field full"><label>Escolha o canal correspondente *</label>
+                <select name="canal_id" required>
+                    <option value="">— Escolha —</option>
+                    ${state.canais.map(c => {
+                        const rede = state.redes.find(r => r.id === c.rede_id);
+                        const pessoa = rede ? state.pessoas.find(p => p.id === rede.pessoa_id) : null;
+                        const label = `${c.nome}${c.pais ? ' (' + c.pais + ')' : ''}${pessoa ? ' — ' + pessoa.nome : ''}`;
+                        return `<option value="${c.id}">${escapeHtml(label)}</option>`;
+                    }).join('')}
+                </select>
+            </div>
+            <div class="form-field full" style="background:rgba(0,245,160,0.06);padding:12px 14px;border-radius:10px;border:1px solid rgba(0,245,160,0.2)">
+                <p style="font-size:12px;color:var(--text-2);margin:0;line-height:1.5">
+                    <strong>O que vai acontecer:</strong>
+                    <br>1. O ucode <code>${escapeHtml(ucode || '?')}</code> será gravado no canal escolhido
+                    <br>2. Essa venda + todas futuras vendas desse produto serão atribuídas automaticamente
+                </p>
+            </div>
+        </div>`;
+    document.getElementById('modal-overlay').classList.add('show');
+}
+window.openVincularModal = openVincularModal;
+
+async function handleVincular(canalId) {
+    const evento = editingItem;
+    if (!evento || !canalId) return;
+    const canal = state.canais.find(c => c.id === canalId);
+    if (!canal) return;
+
+    const ucode = evento._ucode;
+    const rede = state.redes.find(r => r.id === canal.rede_id);
+    const pessoa_id = rede?.pessoa_id || null;
+    const rede_id = rede?.id || null;
+
+    try {
+        // 1) Atualiza o canal com o ucode (pra futuras vendas casarem automaticamente)
+        if (ucode) {
+            const { error: e1 } = await sb.from('tracker_canais').update({ hotmart_id: ucode }).eq('id', canalId);
+            if (e1) throw e1;
+        }
+
+        // 2) Atualiza essa venda
+        const { error: e2 } = await sb.from('tracker_eventos').update({
+            canal_id: canalId, rede_id, pessoa_id,
+        }).eq('id', evento.id);
+        if (e2) throw e2;
+
+        // 3) Tenta atualizar TODAS as outras vendas órfãs do mesmo produto
+        if (ucode) {
+            // busca todas as sem canal_id pra checar se o ucode bate
+            const { data: outras } = await sb.from('tracker_eventos')
+                .select('id, raw_payload')
+                .eq('workspace_id', state.currentWorkspaceId)
+                .is('canal_id', null);
+            const idsParaAtualizar = (outras || []).filter(o => {
+                const u = o.raw_payload?.data?.product?.ucode || String(o.raw_payload?.data?.product?.id || '');
+                return u === ucode;
+            }).map(o => o.id);
+            if (idsParaAtualizar.length > 0) {
+                await sb.from('tracker_eventos').update({
+                    canal_id: canalId, rede_id, pessoa_id,
+                }).in('id', idsParaAtualizar);
+                toast(`Vinculado! ${idsParaAtualizar.length + 1} vendas atualizadas. Futuras vão casar automaticamente.`, 'success');
+            } else {
+                toast('Vinculado! Futuras vendas vão casar automaticamente.', 'success');
+            }
+        } else {
+            toast('Venda vinculada', 'success');
+        }
+
+        closeModal();
+        await loadAllData();
+        renderAll();
+    } catch (err) {
+        console.error(err);
+        toast('Erro: ' + err.message, 'error');
+    }
 }
 
 /* ========== EVENTOS ========== */
@@ -1526,6 +1644,12 @@ async function handleSave(e) {
     const fd = new FormData(e.target);
     const obj = Object.fromEntries(fd.entries());
     if (obj.preco !== undefined) obj.preco = obj.preco ? Number(obj.preco) : null;
+
+    // Vincular venda a canal
+    if (editingType === 'vincular') {
+        await handleVincular(obj.canal_id);
+        return;
+    }
 
     // normaliza FK vazias
     ['rede_id','pessoa_id','canal_id'].forEach(k => { if (obj[k] === '') obj[k] = null; });
