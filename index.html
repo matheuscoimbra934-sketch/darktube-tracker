@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DarkTube Tracker — YouTube × Hotmart</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="bg-stage">
+        <div class="bg-grid"></div>
+        <div class="bg-orb orb-1"></div>
+        <div class="bg-orb orb-2"></div>
+        <div class="bg-orb orb-3"></div>
+        <div class="bg-noise"></div>
+    </div>
+
+    <!-- BOOT -->
+    <div class="boot" id="boot">
+        <div class="boot-logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2.5"/></svg>
+        </div>
+        <div class="boot-title">DARKTUBE TRACKER</div>
+        <div class="boot-sub">Inicializando...</div>
+        <div class="boot-bar"><div class="boot-bar-fill"></div></div>
+    </div>
+
+    <!-- AUTH -->
+    <div class="auth-screen" id="auth-screen" hidden>
+        <div class="auth-card">
+            <div class="auth-brand">
+                <div class="auth-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2.5"/></svg></div>
+                <div class="auth-brand-text">
+                    <div class="brand-title">DARKTUBE</div>
+                    <div class="brand-sub">TRACKER / v1</div>
+                </div>
+            </div>
+            <div class="auth-tabs">
+                <button class="auth-tab active" data-auth-tab="login">Entrar</button>
+                <button class="auth-tab" data-auth-tab="signup">Criar conta</button>
+            </div>
+            <form class="auth-form active" id="form-login">
+                <div class="form-field"><label>Email</label><input type="email" name="email" required placeholder="seu@email.com"></div>
+                <div class="form-field"><label>Senha</label><input type="password" name="password" required placeholder="••••••••"></div>
+                <button type="submit" class="btn-primary auth-submit"><span class="btn-label">Entrar</span><span class="btn-loader" hidden></span></button>
+                <div class="auth-error" id="login-error" hidden></div>
+            </form>
+            <form class="auth-form" id="form-signup">
+                <div class="form-field"><label>Email</label><input type="email" name="email" required placeholder="seu@email.com"></div>
+                <div class="form-field"><label>Senha (mín 6)</label><input type="password" name="password" required minlength="6"></div>
+                <div class="form-field"><label>Nome da operação</label><input type="text" name="workspace" required placeholder="Ex: Operação Tracker" value="Tracker"></div>
+                <button type="submit" class="btn-primary auth-submit"><span class="btn-label">Criar</span><span class="btn-loader" hidden></span></button>
+                <div class="auth-error" id="signup-error" hidden></div>
+            </form>
+            <div class="auth-foot">Mesmo login do DarkTube Finance funciona aqui</div>
+        </div>
+    </div>
+
+    <!-- APP -->
+    <div class="app" id="app" hidden>
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2.5"/></svg></div>
+                <div class="brand-text"><div class="brand-title">DARKTUBE</div><div class="brand-sub">TRACKER</div></div>
+            </div>
+
+            <div class="ws-selector" id="ws-selector">
+                <div class="ws-label">WORKSPACE ATIVO</div>
+                <button class="ws-current" id="ws-current">
+                    <div class="ws-info"><div class="ws-name" id="ws-name">—</div><div class="ws-role" id="ws-role">—</div></div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="ws-dropdown" id="ws-dropdown" hidden></div>
+            </div>
+
+            <div class="status-pill">
+                <span class="status-dot"></span>
+                <span>SYNC ATIVO</span>
+                <span class="status-time" id="status-time">—</span>
+            </div>
+
+            <nav class="nav">
+                <div class="nav-label">RASTREAMENTO</div>
+                <button class="nav-item active" data-tab="dashboard">
+                    <span class="nav-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg></span>
+                    <span class="nav-text">Visão Geral</span>
+                </button>
+                <button class="nav-item" data-tab="vendas">
+                    <span class="nav-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                    <span class="nav-text">Vendas</span>
+                </button>
+                <button class="nav-item" data-tab="videos">
+                    <span class="nav-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></span>
+                    <span class="nav-text">Top Canais</span>
+                </button>
+                <button class="nav-item" data-tab="pessoas">
+                    <span class="nav-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                    <span class="nav-text">Pessoas</span>
+                </button>
+                <button class="nav-item" data-tab="redes">
+                    <span class="nav-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+                    <span class="nav-text">Redes</span>
+                </button>
+                <button class="nav-item" data-tab="canais">
+                    <span class="nav-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/></svg></span>
+                    <span class="nav-text">Canais</span>
+                </button>
+                <button class="nav-item" data-tab="config">
+                    <span class="nav-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+                    <span class="nav-text">Configurações</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="balance-card">
+                    <div class="balance-head"><span class="balance-label">RECEITA HOJE</span><span class="live-indicator"><span class="live-dot"></span>LIVE</span></div>
+                    <div class="balance-value" id="sidebar-receita">R$ 0,00</div>
+                    <div class="balance-meta" id="sidebar-vendas">0 vendas</div>
+                </div>
+                <button class="user-chip" id="user-chip">
+                    <div class="user-avatar" id="user-avatar">?</div>
+                    <div class="user-info"><div class="user-name" id="user-name">—</div><div class="user-status">Online</div></div>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                </button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar-left">
+                    <div class="page-breadcrumb">TRACKER / <span id="bc-current">DASHBOARD</span></div>
+                    <h1 id="page-title">Visão Geral</h1>
+                    <p id="page-sub">Cliques, vendas e conversão por vídeo</p>
+                </div>
+                <div class="topbar-right">
+                    <div class="select-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <select id="period-filter" class="select">
+                            <option value="today">Hoje</option>
+                            <option value="last-7" selected>Últimos 7 dias</option>
+                            <option value="last-30">Últimos 30 dias</option>
+                            <option value="month">Este mês</option>
+                            <option value="last-month">Mês passado</option>
+                            <option value="all">Todos os períodos</option>
+                        </select>
+                    </div>
+                </div>
+            </header>
+
+            <!-- DASHBOARD -->
+            <section class="tab-content active" id="tab-dashboard">
+                <!-- KPIs do dia -->
+                <div class="kpi-grid">
+                    <div class="kpi-card revenue">
+                        <div class="kpi-glow"></div>
+                        <div class="kpi-head"><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div></div>
+                        <div class="kpi-label">VENDAS HOJE</div>
+                        <div class="kpi-value" id="kpi-vendas-hoje">0</div>
+                        <div class="kpi-meta" id="kpi-vendas-hoje-meta">—</div>
+                    </div>
+                    <div class="kpi-card investment">
+                        <div class="kpi-glow"></div>
+                        <div class="kpi-head"><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+                        <div class="kpi-label">RECEITA HOJE</div>
+                        <div class="kpi-value" id="kpi-receita-hoje" style="font-size:22px">R$ 0,00</div>
+                        <div class="kpi-meta">por moeda</div>
+                    </div>
+                    <div class="kpi-card profit">
+                        <div class="kpi-glow"></div>
+                        <div class="kpi-head"><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg></div></div>
+                        <div class="kpi-label">CLIQUES (PERÍODO)</div>
+                        <div class="kpi-value" id="kpi-cliques">0</div>
+                        <div class="kpi-meta" id="kpi-cliques-meta">no período</div>
+                    </div>
+                    <div class="kpi-card expense">
+                        <div class="kpi-glow"></div>
+                        <div class="kpi-head"><div class="kpi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div></div>
+                        <div class="kpi-label">TICKET MÉDIO</div>
+                        <div class="kpi-value" id="kpi-ticket" style="font-size:22px">R$ 0</div>
+                        <div class="kpi-meta" id="kpi-ticket-meta">por venda</div>
+                    </div>
+                </div>
+
+                <!-- Vendas por Pessoa -->
+                <div class="card" style="margin-top:18px">
+                    <div class="card-head">
+                        <div><div class="card-eyebrow">EQUIPE</div><h3>Vendas por Pessoa</h3><p class="card-sub">Performance de cada operador no período</p></div>
+                    </div>
+                    <div class="pessoa-cards" id="dash-pessoas"></div>
+                </div>
+
+                <!-- Top 5 Canais + Time chart -->
+                <div class="chart-grid" style="margin-top:18px">
+                    <div class="card">
+                        <div class="card-head">
+                            <div><div class="card-eyebrow">RANKING</div><h3>Top 5 Canais</h3><p class="card-sub">Os 5 que mais venderam — entre todas as pessoas</p></div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="table" id="dash-top-canais">
+                                <thead>
+                                    <tr><th>#</th><th>Canal</th><th>Pessoa / Rede</th><th class="right">Vendas</th><th class="right">Receita</th></tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card chart-card large">
+                        <div class="card-head">
+                            <div><div class="card-eyebrow">RECEITA NO TEMPO</div><h3>Vendas por Dia</h3><p class="card-sub">No período selecionado</p></div>
+                        </div>
+                        <div class="chart-wrap"><canvas id="chart-time"></canvas></div>
+                    </div>
+                </div>
+
+                <!-- Top Canais detalhado -->
+                <div class="card" style="margin-top:18px">
+                    <div class="card-head">
+                        <div><div class="card-eyebrow">RANKING DETALHADO</div><h3>Canais que mais venderam no período</h3><p class="card-sub">Cada card mostra pessoa, rede, país e os links — clique pra abrir</p></div>
+                    </div>
+                    <div class="canal-grid" id="canal-grid-dashboard"></div>
+                </div>
+                <!-- botão escondido pra não quebrar handlers; pode remover depois -->
+                <button id="enrich-btn" hidden></button>
+            </section>
+
+            <!-- VENDAS -->
+            <section class="tab-content" id="tab-vendas">
+                <!-- Totais por moeda -->
+                <div class="kpi-grid" id="vendas-totais"></div>
+
+                <!-- Filtros -->
+                <div class="action-bar" style="margin-top:18px;flex-wrap:wrap;gap:10px">
+                    <div class="select-wrap" style="min-width:180px">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <select id="vendas-filter-pessoa" class="select"><option value="">Todas as pessoas</option></select>
+                    </div>
+                    <div class="select-wrap" style="min-width:180px">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/></svg>
+                        <select id="vendas-filter-rede" class="select"><option value="">Todas as redes</option></select>
+                    </div>
+                    <div class="select-wrap" style="min-width:180px">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"/><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.46a2.78 2.78 0 0 0-1.94 2A29 29 0 0 0 1 11.75a29 29 0 0 0 .46 5.33A2.78 2.78 0 0 0 3.4 19c1.72.46 8.6.46 8.6.46s6.88 0 8.6-.46a2.78 2.78 0 0 0 1.94-2 29 29 0 0 0 .46-5.25 29 29 0 0 0-.46-5.33z"/></svg>
+                        <select id="vendas-filter-canal" class="select"><option value="">Todos os canais</option></select>
+                    </div>
+                    <div class="select-wrap" style="min-width:140px">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        <select id="vendas-filter-moeda" class="select"><option value="">Todas moedas</option></select>
+                    </div>
+                    <div class="search-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="search-vendas" placeholder="Buscar comprador, src, transação...">
+                    </div>
+                </div>
+
+                <!-- Tabela de vendas -->
+                <div class="card" style="margin-top:14px">
+                    <div class="table-wrap">
+                        <table class="table" id="vendas-table">
+                            <thead>
+                                <tr>
+                                    <th>Quando</th>
+                                    <th>Pessoa</th>
+                                    <th>Rede</th>
+                                    <th>Canal</th>
+                                    <th>Vídeo (src)</th>
+                                    <th>Comprador</th>
+                                    <th>País</th>
+                                    <th class="right">Valor</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TOP CANAIS (all time) -->
+            <section class="tab-content" id="tab-videos">
+                <div class="action-bar">
+                    <div class="search-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="search-videos" placeholder="Buscar canal, país, pessoa, rede...">
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text-3);font-family:'JetBrains Mono'">
+                        <span class="status-dot" style="background:var(--accent);box-shadow:0 0 6px var(--accent)"></span>
+                        RANKING DE TODO O TEMPO · TODAS AS PESSOAS
+                    </div>
+                </div>
+                <div class="canal-grid" id="top-canais-grid"></div>
+            </section>
+
+            <!-- TOP TEMAS -->
+            <section class="tab-content" id="tab-temas">
+                <div class="card">
+                    <div class="card-head"><div><div class="card-eyebrow">RANKING</div><h3>Performance por Tema</h3><p class="card-sub">Receita absoluta e por vídeo — descubra onde investir</p></div></div>
+                    <div class="chart-wrap" style="height:340px"><canvas id="chart-temas"></canvas></div>
+                </div>
+                <div class="card" style="margin-top:18px">
+                    <div class="table-wrap">
+                        <table class="table" id="temas-table">
+                            <thead>
+                                <tr>
+                                    <th>Tema</th>
+                                    <th class="right">Canais</th>
+                                    <th class="right">Vídeos</th>
+                                    <th class="right">Vendas</th>
+                                    <th class="right">Receita</th>
+                                    <th class="right">Receita/Vídeo</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PESSOAS -->
+            <section class="tab-content" id="tab-pessoas">
+                <div class="action-bar">
+                    <button class="btn-primary" data-add="pessoa">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>Nova Pessoa</span>
+                    </button>
+                </div>
+                <div class="card">
+                    <div class="table-wrap">
+                        <table class="table" id="pessoas-table">
+                            <thead>
+                                <tr><th>Nome</th><th>Slug</th><th class="right">Redes</th><th class="right">Canais</th><th class="right">Vendas</th><th class="right">Receita</th><th class="right">Ações</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REDES -->
+            <section class="tab-content" id="tab-redes">
+                <div class="action-bar">
+                    <button class="btn-primary" data-add="rede">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>Nova Rede</span>
+                    </button>
+                </div>
+                <div class="card">
+                    <div class="table-wrap">
+                        <table class="table" id="redes-table">
+                            <thead>
+                                <tr><th>Nome</th><th>Pessoa</th><th>Tema</th><th class="right">Canais</th><th class="right">Vendas</th><th class="right">Receita</th><th class="right">Ações</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CANAIS -->
+            <section class="tab-content" id="tab-canais">
+                <div class="action-bar">
+                    <button class="btn-primary" data-add="canal">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>Novo Canal</span>
+                    </button>
+                    <div class="search-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="search-canais" placeholder="Buscar canais...">
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="table-wrap">
+                        <table class="table" id="canais-table">
+                            <thead>
+                                <tr>
+                                    <th>Canal</th>
+                                    <th>Rede / Pessoa</th>
+                                    <th>País</th>
+                                    <th>Link Hotmart</th>
+                                    <th class="right">Vídeos</th>
+                                    <th class="right">Vendas</th>
+                                    <th class="right">Receita</th>
+                                    <th class="right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- PRODUTOS -->
+            <section class="tab-content" id="tab-produtos">
+                <div class="action-bar">
+                    <button class="btn-primary" data-add="produto">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        <span>Novo Produto</span>
+                    </button>
+                </div>
+                <div class="card">
+                    <div class="table-wrap">
+                        <table class="table" id="produtos-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Hotmart ID</th>
+                                    <th>Link</th>
+                                    <th class="right">Preço</th>
+                                    <th class="right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- GERADOR (movido pra aba Canais agora) -->
+
+            <!-- EVENTOS -->
+            <section class="tab-content" id="tab-eventos">
+                <div class="action-bar">
+                    <div class="event-filter-pills" id="event-filter-pills">
+                        <button class="pill active" data-filter="all">Todos</button>
+                        <button class="pill" data-filter="CLICK">Cliques</button>
+                        <button class="pill" data-filter="PURCHASE_APPROVED">Vendas</button>
+                        <button class="pill" data-filter="PURCHASE_OUT_OF_SHOPPING_CART">Abandonos</button>
+                        <button class="pill" data-filter="PURCHASE_BILLET_PRINTED">Boletos</button>
+                        <button class="pill" data-filter="PURCHASE_REFUNDED">Reembolsos</button>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="table-wrap">
+                        <table class="table" id="eventos-table">
+                            <thead>
+                                <tr><th>Quando</th><th>Evento</th><th>Canal</th><th>Vídeo</th><th>Comprador</th><th>País</th><th class="right">Valor</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CONFIG -->
+            <section class="tab-content" id="tab-config">
+                <div class="card">
+                    <div class="card-head"><div><div class="card-eyebrow">INTEGRAÇÕES</div><h3>Configuração geral</h3><p class="card-sub">Postback da Hotmart e API do YouTube</p></div></div>
+                    <div class="config-body">
+                        <div class="config-section">
+                            <h4>URL do Postback Hotmart</h4>
+                            <p>Cole esta URL no painel da Hotmart (Ferramentas → Postback / Webhook):</p>
+                            <div class="link-output-row"><input id="cfg-webhook-url" readonly onclick="this.select()"><button class="btn-ghost" onclick="copyText(document.getElementById('cfg-webhook-url').value)">Copiar</button></div>
+                        </div>
+                        <div class="config-section">
+                            <h4>URL do Click Tracker</h4>
+                            <p>Use essa URL com <code>?ws=...&src=...&pid=&lt;produto_uuid&gt;</code> pra rastrear cliques:</p>
+                            <div class="link-output-row"><input id="cfg-click-url" readonly onclick="this.select()"><button class="btn-ghost" onclick="copyText(document.getElementById('cfg-click-url').value)">Copiar base</button></div>
+                        </div>
+                        <form id="form-config">
+                            <div class="config-section">
+                                <h4>Hottok (token Hotmart)</h4>
+                                <p>Senha forte que você define e cola igual no painel Hotmart pra validar postbacks.</p>
+                                <input type="text" name="hottok" id="cfg-hottok" placeholder="Ex: darktube_xyz_2026_secret">
+                            </div>
+                            <div class="config-section">
+                                <h4>YouTube Data API Key</h4>
+                                <p>Pega em <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">Google Cloud Console</a> → API & Services → Credentials → Create API key (e ative a "YouTube Data API v3").</p>
+                                <input type="text" name="youtube_api_key" id="cfg-yt-key" placeholder="AIzaSy...">
+                            </div>
+                            <div class="config-section">
+                                <h4>Moeda padrão</h4>
+                                <select name="moeda_padrao" id="cfg-moeda">
+                                    <option value="BRL">BRL — Real</option>
+                                    <option value="USD">USD — Dólar</option>
+                                    <option value="EUR">EUR — Euro</option>
+                                    <option value="MXN">MXN — Peso mexicano</option>
+                                    <option value="ARS">ARS — Peso argentino</option>
+                                </select>
+                            </div>
+                            <div style="display:flex;justify-content:flex-end;gap:8px">
+                                <button type="submit" class="btn-primary">Salvar configuração</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-head">
+                <div><div class="modal-eyebrow" id="modal-eyebrow">CRIAR</div><h2 id="modal-title">Novo</h2></div>
+                <button class="modal-close" id="modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <form id="modal-form" class="modal-body"></form>
+            <div class="modal-foot">
+                <button type="button" class="btn-ghost" id="modal-cancel">Cancelar</button>
+                <button type="submit" form="modal-form" class="btn-primary">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
