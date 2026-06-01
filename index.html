@@ -473,6 +473,26 @@
                                 <input type="text" name="youtube_api_key" id="cfg-yt-key" placeholder="AIzaSy...">
                             </div>
                             <div class="config-section">
+                                <h4>Notificações de venda</h4>
+                                <p>Controle como você é notificado quando chega uma venda nova.</p>
+                                <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+                                    <input type="checkbox" id="cfg-popup-on" checked style="width:auto">
+                                    <span style="font-size:13px;color:var(--text-1)">Pop-up celebração (overlay grande com som e confete)</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:6px">
+                                    <input type="checkbox" id="cfg-sound-on" checked style="width:auto">
+                                    <span style="font-size:13px;color:var(--text-1)">Som de notificação</span>
+                                </label>
+                                <label style="display:flex;align-items:center;gap:10px;cursor:pointer;margin-top:6px">
+                                    <input type="checkbox" id="cfg-browser-notif-on" style="width:auto">
+                                    <span style="font-size:13px;color:var(--text-1)">Notificação do navegador (funciona com a aba minimizada)</span>
+                                </label>
+                                <button type="button" class="btn-ghost" id="cfg-test-popup" style="margin-top:10px;align-self:flex-start">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                    Disparar pop-up de teste
+                                </button>
+                            </div>
+                            <div class="config-section">
                                 <h4>Moeda padrão</h4>
                                 <select name="moeda_padrao" id="cfg-moeda">
                                     <option value="BRL">BRL — Real</option>
@@ -508,6 +528,39 @@
     </div>
 
     <div class="toast" id="toast"></div>
+
+    <!-- POP-UP DE VENDA -->
+    <div class="sale-pop-overlay" id="sale-pop-overlay">
+        <div class="sale-pop" id="sale-pop">
+            <button class="sale-pop-close" id="sale-pop-close" aria-label="Fechar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div class="sale-pop-emoji">💰</div>
+            <div class="sale-pop-eyebrow">NOVA VENDA</div>
+            <div class="sale-pop-title" id="sale-pop-title">Compra Aprovada</div>
+            <div class="sale-pop-amount" id="sale-pop-amount"><span class="moeda">R$</span>0,00</div>
+            <div class="sale-pop-meta" id="sale-pop-meta">—</div>
+            <div class="sale-pop-detail">
+                <div class="sale-pop-detail-item">
+                    <span class="lbl">Pessoa</span>
+                    <span class="val" id="sale-pop-pessoa">—</span>
+                </div>
+                <div class="sale-pop-detail-item">
+                    <span class="lbl">Rede</span>
+                    <span class="val muted" id="sale-pop-rede">—</span>
+                </div>
+                <div class="sale-pop-detail-item">
+                    <span class="lbl">Canal / País</span>
+                    <span class="val" id="sale-pop-canal">—</span>
+                </div>
+                <div class="sale-pop-detail-item">
+                    <span class="lbl">Comprador</span>
+                    <span class="val muted" id="sale-pop-comprador">—</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="confetti" id="confetti"></div>
 
     <script src="config.js"></script>
     <script src="app.js"></script>

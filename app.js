@@ -303,7 +303,139 @@ function handleRTEvento(payload) {
         PURCHASE_CHARGEBACK:         { msg: `Chargeback ${moeda} ${valor.toFixed(2)} — ${srcLabel}`, kind: 'error' },
     };
     if (toastMap[e.event_type]) toast(toastMap[e.event_type].msg, toastMap[e.event_type].kind);
+
+    // 🎉 POP-UP CELEBRATIVO em vendas aprovadas
+    if (e.event_type === 'PURCHASE_APPROVED' || e.event_type === 'PURCHASE_COMPLETE') {
+        showSaleCelebration(e);
+    }
+
     renderAll();
+}
+
+/* ========== POP-UP DE VENDA ========== */
+const NOTIF_PREFS_KEY = 'tracker_notif_prefs';
+function getNotifPrefs() {
+    try { return JSON.parse(localStorage.getItem(NOTIF_PREFS_KEY) || '{}'); }
+    catch { return {}; }
+}
+function setNotifPrefs(p) {
+    try { localStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(p)); } catch {}
+}
+
+function showSaleCelebration(e) {
+    const prefs = getNotifPrefs();
+    if (prefs.popup === false) return;  // user disabled
+
+    const overlay = document.getElementById('sale-pop-overlay');
+    const valor = Number(e.valor || 0);
+    const moeda = (e.moeda || 'BRL').toUpperCase();
+    const sym = MOEDA_SYMBOL[moeda] || moeda;
+    const pessoa = state.pessoas.find(p => p.id === e.pessoa_id);
+    const rede = state.redes.find(r => r.id === e.rede_id);
+    const canal = state.canais.find(c => c.id === e.canal_id);
+
+    document.getElementById('sale-pop-title').textContent = e.event_type === 'PURCHASE_COMPLETE' ? 'Compra Confirmada (pós-garantia)' : 'Compra Aprovada';
+    document.getElementById('sale-pop-amount').innerHTML = `<span class="moeda">${sym}</span>${valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    document.getElementById('sale-pop-meta').textContent = e.src ? `SRC ${e.src}` : 'sem src';
+    document.getElementById('sale-pop-pessoa').textContent = pessoa?.nome || '—';
+    document.getElementById('sale-pop-rede').textContent = rede?.nome || '—';
+    document.getElementById('sale-pop-canal').textContent = canal ? `${canal.nome}${canal.pais ? ' · ' + canal.pais : ''}` : '—';
+    document.getElementById('sale-pop-comprador').textContent = e.comprador_nome || e.comprador_email || '—';
+
+    overlay.classList.add('show');
+
+    // som
+    if (prefs.sound !== false) playKaChing();
+
+    // confete
+    fireConfetti();
+
+    // notificação browser
+    if (prefs.browser === true && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try {
+            new Notification(`💰 Venda! ${sym} ${valor.toFixed(2)}`, {
+                body: `${pessoa?.nome || ''} · ${canal?.nome || ''}${e.comprador_nome ? ' · ' + e.comprador_nome : ''}`,
+                icon: window.location.origin + '/favicon.ico',
+                tag: e.id,
+            });
+        } catch {}
+    }
+
+    // auto-fecha em 7s
+    clearTimeout(showSaleCelebration._t);
+    showSaleCelebration._t = setTimeout(closeSalePop, 7000);
+}
+
+function closeSalePop() {
+    document.getElementById('sale-pop-overlay').classList.remove('show');
+    document.getElementById('confetti').innerHTML = '';
+}
+
+// Som "ka-ching" via Web Audio API (sem arquivo externo)
+let _audioCtx = null;
+function playKaChing() {
+    try {
+        if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = _audioCtx;
+        if (ctx.state === 'suspended') ctx.resume();
+        const now = ctx.currentTime;
+        // 3 notas em sequência (acorde de vitória)
+        const notas = [
+            { freq: 880, t: 0,    dur: 0.13 },  // A5
+            { freq: 1175, t: 0.10, dur: 0.13 }, // D6
+            { freq: 1760, t: 0.20, dur: 0.30 }, // A6
+        ];
+        notas.forEach(n => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(n.freq, now + n.t);
+            gain.gain.setValueAtTime(0, now + n.t);
+            gain.gain.linearRampToValueAtTime(0.18, now + n.t + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + n.t + n.dur);
+            osc.connect(gain).connect(ctx.destination);
+            osc.start(now + n.t);
+            osc.stop(now + n.t + n.dur + 0.02);
+        });
+    } catch {}
+}
+
+// Confete CSS-puro (cria N divs que caem)
+function fireConfetti() {
+    const layer = document.getElementById('confetti');
+    if (!layer) return;
+    layer.innerHTML = '';
+    const colors = ['#00f5a0', '#ff2e63', '#4d8aff', '#ffcc4d', '#b14dff', '#ff3b5c'];
+    const N = 80;
+    for (let i = 0; i < N; i++) {
+        const p = document.createElement('div');
+        p.className = 'confetti-piece';
+        const x = Math.random() * 100;
+        const delay = Math.random() * 0.5;
+        const dur = 2 + Math.random() * 1.5;
+        const rot = Math.random() * 720 - 360;
+        const drift = (Math.random() - 0.5) * 200;
+        p.style.left = x + 'vw';
+        p.style.top = '-20px';
+        p.style.background = colors[i % colors.length];
+        p.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+        p.style.animation = `confetti-fall ${dur}s ${delay}s cubic-bezier(0.55, 0.08, 0.6, 0.95) forwards`;
+        p.style.setProperty('--drift', drift + 'px');
+        p.style.setProperty('--rot', rot + 'deg');
+        layer.appendChild(p);
+    }
+    // injeta keyframes uma vez
+    if (!document.getElementById('confetti-keyframes')) {
+        const style = document.createElement('style');
+        style.id = 'confetti-keyframes';
+        style.textContent = `
+            @keyframes confetti-fall {
+                0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+                100% { transform: translate(var(--drift), 105vh) rotate(var(--rot)); opacity: 0; }
+            }`;
+        document.head.appendChild(style);
+    }
+    setTimeout(() => { layer.innerHTML = ''; }, 5000);
 }
 
 /* ========== PERIOD FILTER ========== */
@@ -1537,6 +1669,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // enrich button
     document.getElementById('enrich-btn').addEventListener('click', handleEnrichClick);
+
+    // pop-up de venda — close + ESC
+    document.getElementById('sale-pop-close').addEventListener('click', closeSalePop);
+    document.getElementById('sale-pop-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'sale-pop-overlay') closeSalePop();
+    });
+
+    // toggles de notificação
+    const prefs = getNotifPrefs();
+    const popupChk = document.getElementById('cfg-popup-on');
+    const soundChk = document.getElementById('cfg-sound-on');
+    const browserChk = document.getElementById('cfg-browser-notif-on');
+    if (popupChk) popupChk.checked = prefs.popup !== false;
+    if (soundChk) soundChk.checked = prefs.sound !== false;
+    if (browserChk) browserChk.checked = prefs.browser === true;
+
+    const savePref = (key, val) => { const p = getNotifPrefs(); p[key] = val; setNotifPrefs(p); };
+    if (popupChk) popupChk.addEventListener('change', () => savePref('popup', popupChk.checked));
+    if (soundChk) soundChk.addEventListener('change', () => savePref('sound', soundChk.checked));
+    if (browserChk) browserChk.addEventListener('change', async () => {
+        savePref('browser', browserChk.checked);
+        if (browserChk.checked && typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+            const result = await Notification.requestPermission();
+            if (result !== 'granted') {
+                browserChk.checked = false;
+                savePref('browser', false);
+                toast('Permissão de notificação negada pelo navegador', 'error');
+            } else {
+                toast('Notificações do navegador ativadas!', 'success');
+            }
+        }
+    });
+
+    // botão "Disparar pop-up de teste"
+    const testBtn = document.getElementById('cfg-test-popup');
+    if (testBtn) testBtn.addEventListener('click', () => {
+        const fakeVenda = {
+            id: 'test-' + Date.now(),
+            event_type: 'PURCHASE_APPROVED',
+            valor: 197.00 + Math.random() * 800,
+            moeda: ['BRL', 'USD'][Math.floor(Math.random() * 2)],
+            src: String(Math.floor(Math.random() * 100) + 1),
+            pessoa_id: state.pessoas[Math.floor(Math.random() * Math.max(1, state.pessoas.length))]?.id,
+            comprador_nome: 'Comprador Teste',
+            comprador_email: 'teste@example.com',
+        };
+        const pessoa = state.pessoas.find(p => p.id === fakeVenda.pessoa_id);
+        if (pessoa) {
+            const rede = state.redes.find(r => r.pessoa_id === pessoa.id);
+            const canal = rede ? state.canais.find(c => c.rede_id === rede.id) : null;
+            fakeVenda.rede_id = rede?.id;
+            fakeVenda.canal_id = canal?.id;
+        }
+        showSaleCelebration(fakeVenda);
+    });
+
+    // ESC fecha o pop-up de venda
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSalePop(); });
 
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
 

@@ -391,6 +391,46 @@ svg { width: 18px; height: 18px; stroke-linecap: round; stroke-linejoin: round; 
 .form-field textarea { resize: vertical; min-height: 80px; }
 .form-field select option { background: #12141c; }
 
+/* ============================================ */
+/* SALE CELEBRATION POPUP                          */
+/* ============================================ */
+.sale-pop-overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 300; pointer-events: none; background: radial-gradient(circle at center, rgba(0, 245, 160, 0.18), rgba(0, 0, 0, 0.6) 70%); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.sale-pop-overlay.show { display: flex; animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pop-in { from { opacity: 0; backdrop-filter: blur(0); } to { opacity: 1; backdrop-filter: blur(6px); } }
+
+.sale-pop { background: linear-gradient(135deg, rgba(20, 23, 35, 0.97), rgba(12, 14, 22, 0.97)); border: 2px solid var(--green); border-radius: 22px; padding: 36px 44px 32px; min-width: 460px; max-width: 92vw; box-shadow: 0 30px 90px rgba(0, 245, 160, 0.35), 0 0 0 1px rgba(0, 245, 160, 0.2); position: relative; overflow: hidden; transform: scale(0.7) translateY(40px); animation: card-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s forwards; pointer-events: auto; }
+@keyframes card-in { to { transform: scale(1) translateY(0); } }
+
+.sale-pop::before { content: ''; position: absolute; top: 0; left: -50%; width: 200%; height: 1px; background: linear-gradient(90deg, transparent, var(--green), var(--accent), var(--violet), var(--green), transparent); animation: shimmer 3s linear infinite; }
+@keyframes shimmer { from { transform: translateX(-25%); } to { transform: translateX(25%); } }
+
+.sale-pop-eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 700; color: var(--green); letter-spacing: 3px; text-transform: uppercase; text-align: center; margin-bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.sale-pop-eyebrow::before, .sale-pop-eyebrow::after { content: ''; height: 1px; flex: 1; max-width: 60px; background: linear-gradient(90deg, transparent, var(--green)); }
+.sale-pop-eyebrow::after { background: linear-gradient(270deg, transparent, var(--green)); }
+
+.sale-pop-title { font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text-0); text-align: center; margin-bottom: 18px; letter-spacing: -0.3px; }
+.sale-pop-emoji { font-size: 38px; margin-bottom: 6px; text-align: center; animation: bounce 1.2s ease-in-out infinite; }
+@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+.sale-pop-amount { font-family: var(--font-display); font-size: 56px; font-weight: 800; color: var(--green); text-align: center; line-height: 1; letter-spacing: -2px; text-shadow: 0 0 30px rgba(0, 245, 160, 0.5); margin-bottom: 4px; }
+.sale-pop-amount .moeda { font-size: 26px; color: var(--green); opacity: 0.7; margin-right: 8px; vertical-align: middle; font-weight: 600; }
+.sale-pop-meta { text-align: center; color: var(--text-3); font-size: 12px; font-family: var(--font-mono); margin-bottom: 22px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+.sale-pop-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding-top: 18px; border-top: 1px solid rgba(255,255,255,0.08); }
+.sale-pop-detail-item { display: flex; flex-direction: column; gap: 2px; }
+.sale-pop-detail-item .lbl { font-family: var(--font-mono); font-size: 9px; color: var(--text-3); letter-spacing: 1.2px; text-transform: uppercase; font-weight: 600; }
+.sale-pop-detail-item .val { font-size: 14px; font-weight: 600; color: var(--text-0); font-family: var(--font-display); }
+.sale-pop-detail-item .val.muted { color: var(--text-2); font-weight: 500; }
+
+.sale-pop-close { position: absolute; top: 12px; right: 12px; width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center; color: var(--text-3); background: rgba(255,255,255,0.04); border: 1px solid var(--border); cursor: pointer; transition: all 0.18s; }
+.sale-pop-close:hover { color: var(--text-0); background: rgba(255,255,255,0.08); }
+.sale-pop-close svg { width: 14px; height: 14px; }
+
+/* Confetti particles */
+.confetti { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 301; overflow: hidden; }
+.confetti.show { display: block; }
+.confetti-piece { position: absolute; width: 10px; height: 14px; opacity: 0.9; will-change: transform; }
+
 /* Toast */
 .toast { position: fixed; bottom: 24px; right: 24px; background: linear-gradient(135deg, rgba(20, 23, 35, 0.95) 0%, rgba(12, 14, 22, 0.95) 100%); backdrop-filter: blur(20px); border: 1px solid var(--border-mid); color: var(--text-0); padding: 14px 20px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; box-shadow: var(--shadow-deep); opacity: 0; transform: translateY(20px); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 200; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateY(0); }
